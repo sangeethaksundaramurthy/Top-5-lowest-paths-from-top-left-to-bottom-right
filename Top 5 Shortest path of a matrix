@@ -1,0 +1,224 @@
+using System;
+
+namespace BestofFiveMatrixTraverse
+{
+    class Program
+    {
+        public static int loopcount = 0;
+        static string[][,]? intLoopArrayMartix;
+        static string[]? pathSum;  // To store sum of all the unique flow path
+        static string[,]? mat;     // To store the matrix
+        static string[,]? matrixFlowPosition;
+
+        private static string[,] BuildMatrix(int m, int n)
+        {
+            int x = m, y = n;
+            string[,] grid = new string[x, y];
+
+            Random rand = new Random();
+            Console.WriteLine("Generated Matrix ");
+            Console.WriteLine("");
+
+            for (int i = 0; i < x; i++)
+            {
+                for (int j = 0; j < y; j++)
+                {
+                    if ((i == 0 && j == 0) || (i == x - 1 && j == y - 1))
+                        grid[i, j] = "*";
+                    else
+                        grid[i, j] = rand.Next(1, 10).ToString();
+
+                    Console.Write("|");
+                    Console.Write(grid[i, j]);
+                }
+                Console.Write("|");
+                Console.WriteLine(" ");
+            }
+            Console.WriteLine("");
+            return grid;
+        }
+
+        static int NoOfFlow(int m, int n)
+        {
+            if (m == 1 || n == 1)
+                return 1;
+
+            return NoOfFlow(m - 1, n) + NoOfFlow(m, n - 1);
+        }
+
+        static void CloneTheMatrix(int uniqueFlowAsIndex)
+        {
+            pathSum = new string[uniqueFlowAsIndex];
+            intLoopArrayMartix = new string[uniqueFlowAsIndex][,];
+            for (int i = 0; i < uniqueFlowAsIndex; i++)
+            {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                intLoopArrayMartix[i] = (string[,])mat.Clone(); // Make a clone of the generated matrix
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+        }
+
+        private static void Printbestfivepath(int noFlow, int pathLength, int row, int column)
+        {
+            var list = new List<KeyValuePair<string, string>>();
+            string[] intLoopArraybak = (string[])pathSum.Clone();
+            int topFive = 0;
+
+            string x;
+            int y, z;
+            // Loop to fill the star and punkt
+            for (int i = 0; i < noFlow; i++)
+            {
+                for (int j = 0; j < pathLength; j++)
+                {
+                    x = matrixFlowPosition[i, j].Replace("(", "").Replace(")", "").Replace(",", "");    // take the value alone by omitting (,)
+                    y = Convert.ToInt32(x[0].ToString());
+                    z = Convert.ToInt32(x[1].ToString());
+
+                    if ((y == 0 && z == 0) || (y == row - 1 && z == column - 1))
+                        intLoopArrayMartix[i][y, z] = "*";
+                    else
+                        intLoopArrayMartix[i][y, z] = ".";
+                }
+            }
+            // Loop to store all the matrix value to the list
+            for (int k = 0; k < noFlow; k++)
+            {
+                for (int i = 0; i < row; i++)
+                {
+                    for (int j = 0; j < column; j++)
+                    {
+                        list.Add(new KeyValuePair<string, string>(pathSum[k], intLoopArrayMartix[k][i, j]));
+                    }
+                }
+            }
+
+            Array.Sort(intLoopArraybak);    // Sort the arraysum to find the top 5 flow woth the lowest path sum
+
+            topFive = Convert.ToInt32(intLoopArraybak[4]); // We are looking for 5 lowest flow, So array value is 4
+
+            var moreThanFiveLetters = list.Where(w => Convert.ToInt32(w.Key) <= topFive).OrderBy(w => w.Key).ToList();
+         
+            int loopcount = 1, loopmatrixcount = 1, loopforeachcount = 0, pathSumIndex = 0;
+            Console.WriteLine("The top 5 flow with lowest path flow");
+            Console.WriteLine("");
+            
+            foreach (var name in moreThanFiveLetters)
+            {               
+                loopforeachcount = loopforeachcount + 1;
+                Console.Write("|");
+                Console.Write(name.Value);
+
+                if (loopcount == 5)
+                {
+                    loopcount = 1;
+                    Console.Write("|");
+                    Console.WriteLine(" ");
+
+                }
+                else
+                    loopcount = loopcount + 1;
+
+                if (loopmatrixcount == 25)
+                {
+                    Console.WriteLine("Path Sum is " + intLoopArraybak[pathSumIndex]);
+                    pathSumIndex++;
+                    Console.WriteLine("");
+                    Console.WriteLine("");
+                    loopmatrixcount = 1;
+                }
+                else
+                    loopmatrixcount = loopmatrixcount + 1;
+
+                if (loopforeachcount == 125)
+                    break;
+            }
+        }
+
+        public static void Main(String[] args)
+        {
+            int row = 5;
+            int column = 5;
+
+            mat = BuildMatrix(row, column); //Generate a matrix with random number
+
+            int matrixPathlLngth = row + column - 1;   // Find matrix path length
+            int uniqueFlow = NoOfFlow(row, column);    // Find number of unique possible path which is 70 for 5*5 matrix
+            CloneTheMatrix(uniqueFlow);         // Matrix clone happend here 
+
+            matrixFlowPosition = new string[uniqueFlow, matrixPathlLngth];    // Array initialization              
+            MatrixTraverse(mat, row, column,
+                            0, 0, new string[matrixPathlLngth], 0, new string[matrixPathlLngth]);
+
+            Printbestfivepath(uniqueFlow, matrixPathlLngth, row, column);
+        }
+
+        private static void MatrixTraverse(string[,] matr, int rows, int cols,
+                                            int i, int j, string[] path, int index, string[] matposition)
+        {
+            path[index] = matr[i, j];   // Matrix value
+            matposition[index] = "(" + i.ToString() + "," + j.ToString() + ")"; //Matrix position
+            int traverseSum = 0;    // traverse sum of a flow
+
+            // Reached the bottom of the matrix so we are left with
+            // only option to move right
+            if (i == rows - 1)
+            {
+                loopcount = loopcount + 1;
+
+                for (int k = j + 1; k < cols; k++)
+                {
+                    path[index + k - j] = matr[i, k];
+                    matposition[index + k - j] = "(" + i.ToString() + "," + k.ToString() + ")";
+                }
+
+                for (int l = 0; l < index + cols - j; l++)
+                {
+                    if (path[l] != "*")
+                        traverseSum = traverseSum + Convert.ToInt32(path[l]); // Calculate sum of a traverse from topleft to bottom right
+                }
+
+                pathSum[loopcount - 1] = traverseSum.ToString();   // Append the sum of each flow in to Looparray
+
+                for (int l = 0; l < index + cols - j; l++)
+                {
+                    matrixFlowPosition[loopcount - 1, l] = matposition[l];  //Append the flow position
+                }
+                return;
+            }
+
+            // Reached the right corner of the matrix we are left with
+            // only the downward movement.
+            if (j == cols - 1)
+            {
+                loopcount = loopcount + 1;
+
+                for (int k = i + 1; k < rows; k++)
+                {
+                    path[index + k - i] = matr[k, j];
+                    matposition[index + k - i] = "(" + k.ToString() + "," + j.ToString() + ")";
+                }
+
+                for (int l = 0; l < index + rows - i; l++)
+                {
+                    if (path[l] != "*")
+                        traverseSum = traverseSum + Convert.ToInt32(path[l]);
+                }
+
+                pathSum[loopcount - 1] = traverseSum.ToString();   // Append the sum of each flow in to Looparray
+
+                for (int l = 0; l < index + rows - i; l++)
+                {
+                    matrixFlowPosition[loopcount - 1, l] = matposition[l];   //Append the flow position
+                }
+                return;
+            }
+
+            // Print all the paths that are possible after moving down
+            MatrixTraverse(matr, rows, cols, i + 1, j, path, index + 1, matposition);
+
+            // Print all the paths that are possible after moving right
+            MatrixTraverse(matr, rows, cols, i, j + 1, path, index + 1, matposition);
+        }
+    }
+}
